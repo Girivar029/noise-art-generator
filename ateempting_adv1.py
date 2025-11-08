@@ -826,51 +826,86 @@ def contrast_adjust(grid, factor):
             val = ((val - 128) * factor) + 128
             grid[x][y] = max(0, min(255, int(val)))
 
-# Main loop with added variants and techniques
+def generate_layered_noise(base_grid, layers=3, persistence=0.5, scale=10):
+    width = len(base_grid)
+    height = len(base_grid[0])
+    accumulated = [[0]*height for _ in range(width)]
+    amplitude = 1.0
+    total_amp = 0
+    noise_layers = []
+    for i in range(layers):
+        noise_layer = generate_perlin_noise(width, height, scale = scale * (2**i))
+        amplitude *= persistence
+        total_amp += amplitude
+        noise_layers.append((noise_layer, amplitude))
+    for x in range(width):
+        for y in range(height):
+            val = 0
+            for layer, amp in noise_layers:
+                val += layer[x][y] * amp
 
-frames = 0
-while True:
+            accumulated[x][y] = int(val / total_amp)
+    return accumulated
 
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            pygame.quit()
-            sys.exit()
+def apply_color_gradient(grid, start_hue, end_hue):
+    width = len(grid)
+    height = len(grid[0])
+    colored_grid = [[None]*height for _ in range(width)]
+    for x in range(width):
+        for y in range(height):
+            norm_val = grid[x][y] / 255
+            hue = int(start_hue + (end_hue - start_hue) * norm_val) % 360
+            val = int(norm_val * 100)
+            colored_grid[x][y] = pygame.Color(0)
+            colored_grid[x][y].hsva = (hue, 100, val, 100)
 
-    # Modulate noise with sinusoidal effect
-    sinusoidal_modulation(noise_grid, frames * 0.05, 0.1, 15)
+    return colored_grid
 
-    # Randomly add sparkles
-    if frames % 20 == 0:
-        apply_random_sparkle(noise_grid, 50)
+def interactive_noise_control(noise_grid, colored_grid):
+    keys = pygame.key.get_pressed()
+    if keys[pygame.K_UP]:
+        for x in range(len(noise_grid)):
+            for y in range(len(noise_grid[0])):
+                noise_grid[x][y] = min(noise_grid[x][y] + 1, 255)
 
-    # Add ripple at center
-    ripple_effect(noise_grid, GRID_WIDTH // 2, GRID_HEIGHT // 2, 10, 20)
+    if keys[pygame.K_DOWN]:
+        for x in range(len(noise_grid)):
+            for y in range(len(noise_grid[0])):
+                noise_grid[x][y] = max(noise_grid[x][y] - 1, 0)
 
-    # Blur the noise grid for smoothing
-    noise_grid = blur_grid(noise_grid, 3)
+    if keys[pygame.K_LEFT]:
+        shift_hue(colored_grid,-1)
 
-    # Overlay checkerboard for pattern effect
-    checker = generate_checkerboard(GRID_WIDTH, GRID_HEIGHT, 5)
-    for x in range(GRID_WIDTH):
-        for y in range(GRID_HEIGHT):
-            if checker[x][y] == 255 and noise_grid[x][y] < 150:
-                noise_grid[x][y] = 150
+    if keys[pygame.K_RIGHT]:
+        shift_hue(colored_grid,1)
 
-    apply_color_layer(noise_grid)
+def main():
+    global noise_grid, colored_grid, clock
 
-    shift_hue(colored_grid, 1)
+    running = True
+    frame = 0
 
-    screen.fill((0, 0, 0))
-    draw_grid(screen, colored_grid)
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
 
-    # Random shapes overlay
-    if frames % 60 == 0:
-        random_shapes(screen, 5, 40)
+        interactive_noise_control(noise_grid, colored_grid)
 
-    # Paint random lines
-    if frames % 100 == 0:
-        paint_random_lines(screen, 10)
+        if frame % 10 == 0:
+            noise_grid = generate_layered_noise(noise_grid, layers=4, persistence=0.5, scale=12)
+            colored_grid = apply_color_gradient(noise_grid, 0 , 360)
 
-    pygame.display.flip()
-    clock.tick(30)
-    frames += 1
+        screen.fill((0,0,0))
+        draw_grid(screen, colored_grid)
+        pygame.display.flip()
+        clock.tick(30)
+        frame += 1
+
+    pygame.quit()
+
+base_noise = generate_perlin_noise(GRID_WIDTH, GRID_HEIGHT, scale=10)
+noise_grid = base_noise
+colored_grid = apply_color_gradient(noise_grid,0,360)
+
+main()
