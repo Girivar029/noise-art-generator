@@ -15,12 +15,46 @@ def lerp_color(a, b, t):
 
 def get_palette(type_name):
     palettes = {
-        "sunset": [(244,54,66),(249,187,56),(225,120,34),(90,13,50),(41,28,88)],
-        "ocean": [(29,73,97),(41,122,142),(141,197,208),(237,245,246)],
-        "nebula": [(58,43,95),(85,14,98),(184,56,196),(236,182,225),(246,238,185)],
-        "gold": [(233,190,71),(247,231,174),(189,153,50),(97,68,32),(255,255,255)],
-        "forest": [(44,46,16),(82,82,51),(130,141,59),(189,196,99),(251,255,199)]
+        "red": [
+            (32, 5, 8),
+            (60, 10, 14),
+            (90, 18, 22),
+            (120, 24, 27),
+            (150, 34, 35),
+            (180, 44, 46),
+            (210, 58, 63),
+        ],
+        "purple": [
+            (18, 5, 30),
+            (32, 10, 50),
+            (50, 18, 75),
+            (64, 24, 95),
+            (85, 35, 120),
+            (110, 50, 150),
+            (140, 65, 190),
+        ],
+        "blue": [
+            (7, 13, 23),
+            (14, 23, 38),
+            (22, 32, 54),
+            (33, 47, 80),
+            (46, 69, 104),
+            (60, 90, 138),
+            (80, 120, 178),
+        ],
+        "dark_brown": [
+            (14, 9, 6),
+            (19, 13, 9),
+            (29, 20, 13),
+            (38, 26, 16),
+            (48, 33, 22),
+            (59, 40, 28),
+            (80, 55, 40),
+        ]
     }
+
+
+
     return random.choice(list(palettes.values()))
 
 def random_palette(count, vibrance=0.8, from_type=None):
@@ -110,21 +144,12 @@ def draw_px_planet(surf, cx, cy, r, palette, noise, bands):
                 rx, ry = cx+x, cy+y
                 if 0<=rx<LOW_W and 0<=ry<LOW_H:
                     norm = math.sqrt(x*x+y*y)/r
-                    nval = noise([rx/LOW_W, ry/LOW_H])
-                    blend = (0.45*norm+0.45*((nval+1)/2))
-                    idx = int(blend*bands)
-                    idx = min(bands-1, max(0, idx))
+                    idx = int(norm * (bands-1))
                     col = palette[idx]
                     surf.set_at((rx, ry), col)
+
                     if abs(norm-1)<0.08:
                         surf.set_at((rx, ry), lerp_color(col, (255,255,255), 0.92))
-                    # noise crater
-                    if nval< -0.14 and norm<0.91:
-                        surf.set_at((rx, ry), lerp_color(col, (58,38,25), 0.77))
-                    if nval>0.7 and norm<0.72:
-                        surf.set_at((rx, ry), lerp_color(col, (210,230,255), 0.44))
-                    if random.random()<0.003 and abs(norm-0.49)<0.27:
-                        surf.set_at((rx,ry), lerp_color(col, (175,65,13), 0.46))
 
 def draw_planet_shadow(surf, cx, cy, r, shade=(0,0,0), alpha=0.31):
     for y in range(-r, r):
@@ -136,7 +161,7 @@ def draw_planet_shadow(surf, cx, cy, r, shade=(0,0,0), alpha=0.31):
                     shad = tuple(int(col[i]*(1-alpha)+shade[i]*alpha) for i in range(3))
                     surf.set_at((rx,ry), shad)
 
-def draw_px_craters(surf, cx, cy, r, min_r, max_r, count):
+"""def draw_px_craters(surf, cx, cy, r, min_r, max_r, count):
     for _ in range(count):
         angle = random.uniform(0,2*math.pi)
         dist = random.uniform(r*0.13, r*0.93)
@@ -148,7 +173,7 @@ def draw_px_craters(surf, cx, cy, r, min_r, max_r, count):
                 if x*x + y*y <= cr*cr:
                     px, py = crater_cx + x, crater_cy + y
                     if 0<=px<LOW_W and 0<=py<LOW_H:
-                        surf.set_at((px, py), (50,46,32))
+                        surf.set_at((px, py), (50,46,32))"""
 
 def draw_px_highlight(surf, cx, cy, r, highlight_col):
     for theta in range(72,114,1):
@@ -188,7 +213,7 @@ def draw_px_moons(surf, planet_x, planet_y, planet_r, count, min_r, max_r, palet
         moon_noise = PerlinNoise(octaves=random.randint(2,3))
         draw_px_planet(surf,mx,my,r,moon_col,moon_noise,len(moon_col))
         draw_planet_shadow(surf, mx,my,r,shade=(0,0,0),alpha=random.uniform(0.1,0.44))
-        draw_px_craters(surf,mx,my,r,2,6,random.randint(5,15))
+        #draw_px_craters(surf,mx,my,r,2,6,random.randint(5,15))
 
 def draw_planet_atmosphere(light_surf, cx, cy, r, color,max_width=9,fade=0.12):
     for i in range(1,max_width+1):
@@ -196,18 +221,21 @@ def draw_planet_atmosphere(light_surf, cx, cy, r, color,max_width=9,fade=0.12):
         col = tuple(min(255, max(0,int(color[j]*(1-fade*i))))for j in range(3))
         pygame.draw.circle(light_surf, col+(alpha,),(cx,cy),r+i,1)
 
-def draw_cosmic_haze(surf, palette, haze_count=6, max_rad_range=(30,90),alpha=80):
+def draw_cosmic_haze(surf, palette, haze_count=6, max_rad_range=(30,90), alpha=60):
     for _ in range(haze_count):
-        cx = random.randint(0,LOW_W-1)
-        cy = random.randint(0,LOW_H-1)
+        cx = random.randint(0, LOW_W-1)
+        cy = random.randint(0, LOW_H-1)
         rad = random.randint(*max_rad_range)
         color = random.choice(palette)
-        haze = pygame.Surface((rad*2,rad*2),pygame.SRCALPHA)
-        for r in range(rad,0,-1):
-            cr = tuple(int((r/rad)*c) for c in color)
-            haze_alpha = int((alpha * r) / rad)
-            pygame.draw.circle(haze,cr+(haze_alpha,),(rad,rad),r)
-        surf.blit(haze, (cx-rad,cy-rad), special_flags=pygame.BLEND_RGBA_ADD)
+        # Prevent overly white haze
+        color = tuple(int(c*0.75 + random.choice(palette)[i]*0.25) for i, c in enumerate(color))
+        haze = pygame.Surface((rad*2, rad*2), pygame.SRCALPHA)
+        for r in range(rad, 0, -1):
+            cr = tuple(int((r/rad) * color[i]) for i in range(3))
+            haze_alpha = int((min(alpha, 90) * r) / rad)  # never more than 90
+            pygame.draw.circle(haze, cr+(haze_alpha,), (rad, rad), r)
+        surf.blit(haze, (cx-rad, cy-rad), special_flags=pygame.BLEND_RGBA_ADD)
+
 
 def blend_layers(base, overlays):
     result = base.copy()
@@ -215,7 +243,7 @@ def blend_layers(base, overlays):
         result.blit(layer,(0,0), special_flags=pygame.BLEND_RGBA_ADD)
     return result
 
-def add_noise_texture(surf, intensity=15, octaves=3):
+"""def add_noise_texture(surf, intensity=0, octaves=0):
     noise = PerlinNoise(octaves=octaves)
     for y in range(LOW_H):
         for x in range(LOW_W):
@@ -223,7 +251,7 @@ def add_noise_texture(surf, intensity=15, octaves=3):
             delta = int((val-0.5)*intensity * 2)
             old = surf.get_at((x,y))
             new_col = tuple(max(0,min(255,old[i]+delta))for i in range(3))
-            surf.set_at((x,y), new_col)
+            surf.set_at((x,y), new_col)"""
 
 def soften_artifact_edges(surf, radius=1):
     arr = pygame.surfarray.pixels3d(surf)
@@ -237,7 +265,7 @@ def soften_artifact_edges(surf, radius=1):
             arr[x,y] = mean
     del arr
 
-def paint_deep_space_patches(surf, palette, patch_count=4, min_size=38, max_size=110):
+"""def paint_deep_space_patches(surf, palette, patch_count=4, min_size=38, max_size=110):
     for _ in range(patch_count):
         cx = random.randint(min_size, LOW_W-min_size-1)
         cy = random.randint(min_size, LOW_H-min_size-1)
@@ -249,7 +277,7 @@ def paint_deep_space_patches(surf, palette, patch_count=4, min_size=38, max_size
             c = tuple(int((r/rad)*color[i])for i in range(3))
             a = int(valpha * (r/rad))
             pygame.draw.circle(patch, c+(a,), (rad, rad),r)
-        surf.blit(patch, (cx-rad,cy-rad),special_flags=pygame.BLEND_RGBA_ADD)
+        surf.blit(patch, (cx-rad,cy-rad),special_flags=pygame.BLEND_RGBA_ADD)"""
 
 def procedural_lensflare(surf, cx,cy,palette, size=26, intensity=0.54):
     flare = pygame.Surface((size*2,size*2), pygame.SRCALPHA)
@@ -264,16 +292,16 @@ def procedural_lensflare(surf, cx,cy,palette, size=26, intensity=0.54):
 def draw_rich_px_scene(surf, planet_palette_type='nebula', nebula_palette_type='nebula', extra_deep=None):
     stops = random_palette(random.randint(2,4),0.93, nebula_palette_type)
     draw_px_gradient_bg(surf, stops)
-    add_noise_texture(surf, intensity=6 + random.randint(0,8), octaves=random.randint(2,4))
+    #add_noise_texture(surf, intensity=6 + random.randint(0,8), octaves=random.randint(2,4))
     draw_px_stars(surf, density=0.005, palette=[(255,255,255),(220,234,234),(160,220,225)])
     neb_col = random_palette(random.randint(4,7),0.97,nebula_palette_type)
-    draw_px_nebula(surf, neb_col, octaves=random.randint(2,5),alpha=0.5+random.random()*0.2)
+    #draw_px_nebula(surf, neb_col, octaves=random.randint(2,5),alpha=0.5+random.random()*0.2)
     haze_col = random_palette(random.randint(4,7),0.7,nebula_palette_type)
     draw_cosmic_haze(surf, haze_count=random.randint(2,5), max_rad_range=(60,125),alpha=random.randint(44,120))
     deep_pal = random_palette(random.randint(3,6),0.9,extra_deep) if extra_deep else random_palette(3,0.9)
-    paint_deep_space_patches(surf, deep_pal, patch_count=random.randint(3,6), min_size=36,max_size=135)
+    #paint_deep_space_patches(surf, deep_pal, patch_count=random.randint(3,6), min_size=36,max_size=135)
     cluster_p = random.palette(random.randint(3,5),0.82)
-    draw_cluster_nebula(surf, clusters=random.randint(7,15), palette=cluster_p, max_size=random.randint(23,54))
+    #draw_cluster_nebula(surf, clusters=random.randint(7,15), palette=cluster_p, max_size=random.randint(23,54))
 
 def generate_px_planets(surf, n, min_r, max_r, shadow_degrees=(95,290)):
     ptypes = ["sunset","ocean","forest","nebula","gold"]
@@ -283,9 +311,9 @@ def generate_px_planets(surf, n, min_r, max_r, shadow_degrees=(95,290)):
     for idx, (cx, cy, r) in enumerate(positions):
         planet_noise = PerlinNoise(octaves=random.randint(2,6))
         draw_px_planet(surf, cx, cy, r, palettes[idx], planet_noise, len(palettes[idx]))
-        draw_px_craters(surf, cx, cy,r, 2, max(int(r*0.44),4), random.randint(5,9))
+        #draw_px_craters(surf, cx, cy,r, 2, max(int(r*0.44),4), random.randint(5,9))
         highlight_col = lerp_color((255,255,255), palettes[idx][0], 0.5)
-        draw_px_craters(surf, cx, cy, r, 2, max(int(r*0.44),4), random.randint(5,9))
+        #draw_px_craters(surf, cx, cy, r, 2, max(int(r*0.44),4), random.randint(5,9))
         highlight_col = lerp_color((255,255,255), palettes[idx][0], 0.5)
         draw_px_highlight (surf, cx, cy, r, highlight_col)
         draw_px_rings(surf, cx, cy, r, palettes[idx], rings=random.randint(1,3), fade=random.randint(13,25))
@@ -312,7 +340,7 @@ def generate_moons(surf, positions, min_r=5, max_r=12):
             m_r = random.randint(min_r,max_r)
             draw_px_planet(surf, mx,my, m_r,moon_pal,moon_noise,len(moon_pal))
             draw_planet_shadow(surf, mx,my,m_r, shade=(0,0,0),alpha = random.uniform(0.18,0.34))
-            draw_px_craters(surf, mx,my, m_r, 2, m_r // 2,random.randint(3,7))
+            #draw_px_craters(surf, mx,my, m_r, 2, m_r // 2,random.randint(3,7))
             moons.append((mx,my,m_r))
         moons_by_planet.append(moons)
     return moon_all_palettes, moons_by_planet
@@ -320,7 +348,7 @@ def generate_moons(surf, positions, min_r=5, max_r=12):
 def planet_atmospheres_layer(planet_data, atmos_alpha=105, blur_rad=13):
     atmos_surf = pygame.Surface((LOW_W, LOW_H), pygame.SRCALPHA)
     for planet in planet_data:
-        for 1 in range(blur_rad, 1, -1):
+        for i in range(blur_rad, 1, -1):
             alpha = int(atmos_alpha * (1 / blur_rad))
             col = planet["atmcol"] + (alpha,)
             pygame.draw.circle(atmos_surf, col,(planet["cx"], planet["cy"]), planet["r"]+1, 0)
@@ -635,3 +663,163 @@ def draw_cosmic_dust(surf,density=0.021,palette=None):
     if palette is None:
         palette = [(190,180,170),(180,170,200),(220,213,180),(213,180,220)]
         count = int(density * LOW_W * LOW_H)
+        for _ in range(count):
+            x = random.randint(0,LOW_W-1)
+            y = random.randint(0, LOW_H-1)
+            surf.set_at((x,y), random.choice(palette))
+
+def build_overlay_layers(base_surf, planet_data, moons_data):
+    atmosphere_layer = pygame.Surface((LOW_W,LOW_H),pygame.SRCALPHA)
+    draw_planet_atmosphere(atmosphere_layer,base_surf,planet_data)
+    lensflare_layer = pygame.Surface((LOW_W,LOW_H), pygame.SRCALPHA)
+    draw_lensflares(lensflare_layer, planet_data)
+    deep_cosmic_layer = pygame.Surface((LOW_W,LOW_H),pygame.SRCALPHA)
+    draw_cosmic_haze(deep_cosmic_layer, random_palette(6,0.75),haze_count=5, max_rad_range=(85,115),alpha=95)
+    #paint_deep_space_patches(deep_cosmic_layer,random_palette(4,0.9),patch_count=4,min_size=50,max_size=95)
+    final_img = blend_layers(base_surf,[atmosphere_layer, lensflare_layer, deep_cosmic_layer])
+    return final_img
+
+def draw_planet_atmosphere(surf,base,planets, atmos_alpha=130, blur_rad=12):
+    cx,cy,r = 0,0,0
+    for planet in planets:
+        cx,cy,r = planet["cx"], planet["cy"],planet["r"]
+        color = planet["atmcol"]
+        for i in range(blur_rad,0,-1):
+            a = int(atmos_alpha * (i/blur_rad))
+            col = tuple(min(255,max(0,int(color[j]*(1-i/blur_rad))))for j in range(3)) + (a,)
+            pygame.draw.circle(surf, col, (cx,cy),r+i)
+    surf.blit(base,(0,0))
+
+def draw_lensflares(surf, planets):
+    for planet in planets:
+        count = random.randint(1,5)
+        for _ in range(count):
+            angle = random.uniform(0,2*math.pi)
+            dist = planet["r"] + random.randint(9,55)
+            fx = int(planet["cx"] + math.cos(angle)*dist)
+            fy = int(planet["cy"] + math.sin(angle)*dist)
+            procedural_lensflare(surf, fx, fy, [planet["atmcol"],(240,240,240)], size = random.randint(13,34), intensity=0.46 + random.random()*0.54)
+
+def procedural_lensflare(surf, cx,cy, palette, size=25,intensity=0.56):
+    flare = pygame.Surface((size*2,size*2), pygame.SRCALPHA)
+    base_color = palette[0]
+    for r in range(size,0,-1):
+        fade_factor = (r/size) ** intensity
+        color = tuple(int(base_color[i]*fade_factor)for i in range(3))
+        alpha = int(120 * fade_factor)
+        pygame.draw.circle(flare, color+(alpha,),(size,size),r)
+    surf.blit(flare, (cx-size,cy-size),special_flags=pygame.BLEND_RGBA_ADD)
+
+def generate_and_draw_scene():
+    low_res_surface = pygame.Surface((LOW_W,LOW_H))
+    paltype = random.choice(["nebula","sunset","ocean","forest", "gold"])
+    bg_colors = random_palette(random.randint(2,4),0.9,paltype)
+    draw_px_gradient_bg(low_res_surface,bg_colors)
+    #add_noise_texture(low_res_surface,intensity=8,octaves=3)
+    draw_px_stars(low_res_surface, density=0.004,palette=[(255,255,255),(210,230,230),(170,220,225)])
+    #draw_px_nebula(low_res_surface, random_palette(random.randint(3,7),0.85,paltype), octaves=4,alpha=0.54)
+    #draw_cluster_nebula(low_res_surface,clusters=random.randint(7,15),palette=random_palette(random.randint(3,5),0.83),max_size=random.randint(24,53))
+    planet_palette = [random_palette(random.randint(5,10),0.92,paltype)for _ in range(random.randint(2,3))]
+    planet_positions = random_safe_planet_positions(len(planet_palette),LOW_W, LOW_H,15,32)
+
+    planet_infos = []
+    for idx, (cx,cy,rad) in enumerate(planet_positions):
+        noise = PerlinNoise(octaves=random.randint(3,6))
+        draw_px_planet(low_res_surface,cx,cy,rad,planet_palette[idx],noise,len(planet_palette[idx]))
+        draw_planet_shadow(low_res_surface,cx,cy,rad,shade=(0,0,0),alpha=random.uniform(0.26,0.45))
+        #draw_px_craters(low_res_surface,cx,cy.rad,random.randint(2,6),random.randint(5,15),random.randint(6,19))
+        highlight_col = lerp_color((255,255,255),planet_palette[idx][0],0.55)
+        draw_px_rings(low_res_surface,cx,cy,rad,planet_palette[idx],rings=random.randint(1,4),fade=random.randint(12,23))
+        atmos_col = lerp_color(planet_palette[idx][0],(245,245,250),0.60)
+        planet_infos.append({"cx":cx,"cy":cy,"r":rad,"atmcol":atmos_col})
+
+        moons_palettes, moons_info = generate_moons(low_res_surface, planet_positions,min_r=6,max_r=13)
+        atmosphere_layer = planet_atmospheres_layer(planet_infos)
+        final_img = blend_layers(low_res_surface,[atmosphere_layer])
+        draw_lensflares(final_img, planet_infos)
+
+        hi_res_surface = upscale_px(final_img)
+        window.blit(hi_res_surface,(0,0))
+        pygame.display.flip()
+
+class WallpaperCreator:
+    def __init__(self, width=1600, height=1100, block_size=8):
+        self.width = width
+        self.height = height
+        self.block_size = block_size
+        self.low_w = width // block_size
+        self.low_h = height // block_size
+        pygame.init()
+        self.window = pygame.display.set_mode((self.width, self.height))
+        pygame.display.set_caption("Perlin Noise Pixel Art Space Wallpaper Creator")
+        self.low_surface = pygame.Surface((self.low_w, self.low_h))
+        self.clock = pygame.time.Clock()
+        self.running = True
+        self.planet_data = []
+        self.moons_data = []
+
+    def clear_surface(self):
+        self.low_surface.fill((0, 0, 0))
+
+    def generate_scene(self):
+        self.clear_surface()
+        paltype = random.choice(["nebula", "sunset", "ocean", "forest", "gold"])
+        bg_colors = random_palette(random.randint(2, 4), 0.9, paltype)
+        draw_px_gradient_bg(self.low_surface, bg_colors)
+        #add_noise_texture(self.low_surface, intensity=8, octaves=3)
+        draw_px_stars(self.low_surface, density=0.004, palette=[(255, 255, 255), (210, 230, 230), (170, 220, 255)])
+        #draw_px_nebula(self.low_surface, random_palette(random.randint(3, 7), 0.85, paltype), octaves=4, alpha=0.54)
+        #draw_cluster_nebula(self.low_surface, clusters=random.randint(7, 15), palette=random_palette(random.randint(3, 5), 0.83), max_size=random.randint(24, 53))
+        planet_count = random.randint(2, 3)
+        self.planet_palette = [random_palette(random.randint(5, 10), 0.92, paltype) for _ in range(planet_count)]
+        self.planet_positions = random_safe_planet_positions(planet_count, self.low_w, self.low_h, 15, 32)
+        self.planet_data.clear()
+
+        for idx, (cx, cy, rad) in enumerate(self.planet_positions):
+            noise = PerlinNoise(octaves=random.randint(3, 6))
+            draw_px_planet(self.low_surface, cx, cy, rad, self.planet_palette[idx], noise, len(self.planet_palette[idx]))
+            draw_planet_shadow(self.low_surface, cx, cy, rad, shade=(0, 0, 0), alpha=random.uniform(0.26, 0.45))
+            #draw_px_craters(self.low_surface, cx, cy, rad, random.randint(2, 6), random.randint(5, 15), random.randint(6, 19))
+            highlight_col = lerp_color((255, 255, 255), self.planet_palette[idx][0], 0.55)
+            draw_px_highlight(self.low_surface, cx, cy, rad, highlight_col)
+            draw_px_rings(self.low_surface, cx, cy, rad, self.planet_palette[idx], rings=random.randint(1, 4), fade=random.randint(12, 23))
+            atmos_col = lerp_color(self.planet_palette[idx][0], (245, 245, 250), 0.69)
+            self.planet_data.append({"cx": cx, "cy": cy, "r": rad, "atmcol": atmos_col})
+
+        self.moons_palettes, self.moons_data = generate_moons(self.low_surface, self.planet_positions, min_r=6, max_r=13)
+
+    def render_final(self):
+        #atmosphere_layer = planet_atmospheres_layer(self.planet_data)
+        final_img = blend_layers(self.low_surface, [])
+        #draw_lensflares(final_img, self.planet_data)
+        hi_res_surface = upscale_px(final_img)
+        self.window.blit(hi_res_surface, (0, 0))
+        pygame.display.flip()
+
+    def save_wallpaper(self, filename='space_wallpaper.png'):
+        #atmosphere_layer = planet_atmospheres_layer(self.planet_data)
+        final_img = blend_layers(self.low_surface, [])
+        #draw_lensflares(final_img, self.planet_data)
+        hi_res_surface = upscale_px(final_img)
+        pygame.image.save(hi_res_surface, filename)
+
+    def event_loop(self):
+        while self.running:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    self.running = False
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_ESCAPE:
+                        self.running = False
+                    elif event.key == pygame.K_s:
+                        self.save_wallpaper()
+
+            self.render_final()
+            self.clock.tick(30)
+        pygame.quit()
+
+
+if __name__ == "__main__":
+    creator = WallpaperCreator()
+    creator.generate_scene()
+    creator.event_loop()
