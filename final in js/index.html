@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Pixel Art Space Planet Generator</title>
+<style>
+  body {
+    margin: 0; 
+    background-color: #111;
+    color: white;
+    font-family: Arial, sans-serif;
+    user-select: none;
+    overflow: hidden;
+  }
+  #canvas {
+    display: block;
+    margin: auto;
+    background-color: #000;
+  }
+  #info {
+    text-align: center;
+    margin-top: 6px;
+    font-size: 14px;
+    color: #ccc;
+  }
+</style>
+</head>
+<body>
+<canvas id="canvas" width="800" height="550"></canvas>
+<div id="info">Press [Space] to regenerate planets. Press [S] to save image. This is a small prototype for a better python version.</div>
+<script src="script.js"></script>
+</body>
+</html>

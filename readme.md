@@ -21,3 +21,6 @@
 - And ya that is the creation process of whatever u wanna call this ig.
 - I personally call it a ugly bg generator.
 - Sidenote: This does not work on itch io but I tried to make an online working version of it so ya pls try running the main program with the necessary modules installed.
+- Redid the html part, so hopefull works in web.
+
+OK then thanks for reading so far, hope u liked this joke of a project and thnx and goodbye!
